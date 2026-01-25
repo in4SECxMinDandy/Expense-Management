@@ -1,10 +1,17 @@
-# Expense Management - Ứng dụng Quản lý Chi tiêu Cá nhân
+# Expense Management
 
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter"/>
   <img src="https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white" alt="Dart"/>
   <img src="https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite"/>
+  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web%20%7C%20Desktop-blue?style=for-the-badge" alt="Platform"/>
 </p>
+
+<p align="center">
+  <b>Ứng dụng Quản lý Chi tiêu Cá nhân đa nền tảng</b>
+</p>
+
+---
 
 ## Giới thiệu
 
@@ -12,64 +19,18 @@
 
 ## Tính năng chính
 
-### Quản lý Giao dịch
-- Thêm, sửa, xóa giao dịch thu nhập và chi tiêu
-- Phân loại giao dịch theo danh mục tùy chỉnh
-- Đính kèm hóa đơn/ảnh chụp cho giao dịch
-- Ghi chú chi tiết cho từng giao dịch
-- Lọc giao dịch theo ngày, tuần, tháng, năm
-
-### Quản lý Danh mục
-- Tạo danh mục thu nhập và chi tiêu riêng biệt
-- Tùy chỉnh icon cho từng danh mục
-- Phân loại linh hoạt theo nhu cầu cá nhân
-
-### Quản lý Ngân sách
-- Thiết lập ngân sách hàng tháng cho từng danh mục
-- Theo dõi tiến độ chi tiêu so với ngân sách
-- Cảnh báo khi chi tiêu gần đạt hoặc vượt ngân sách
-
-### Mục tiêu Tiết kiệm
-- Đặt mục tiêu tiết kiệm với số tiền cụ thể
-- Theo dõi tiến độ đạt mục tiêu
-- Động lực tiết kiệm với giao diện trực quan
-
-### Giao dịch Định kỳ
-- Tự động tạo giao dịch lặp lại (tiền thuê nhà, lương, hóa đơn...)
-- Tùy chỉnh chu kỳ lặp lại
-
-### Ví điện tử
-- Quản lý nhiều ví/tài khoản khác nhau
-- Theo dõi số dư từng ví
-
-### Báo cáo & Thống kê
-- Biểu đồ chi tiêu theo thời gian (Line Chart)
-- Thống kê thu nhập, chi tiêu, tiết kiệm
-- Lọc báo cáo theo tháng/năm
-- Phân tích chi tiêu theo danh mục
-
-### Phân tích AI
-- Insights thông minh về thói quen chi tiêu
-- Gợi ý cải thiện tài chính cá nhân
-
-### Xuất dữ liệu
-- Xuất báo cáo ra file CSV
-- Xuất báo cáo ra file PDF
-- Chia sẻ báo cáo qua các ứng dụng khác
-
-### Thông báo
-- Nhắc nhở thanh toán hóa đơn
-- Cảnh báo ngân sách
-
-### Giao diện
-- Hỗ trợ Dark Mode và Light Mode
-- Thiết kế hiện đại theo phong cách iOS
-- Giao diện hoàn toàn bằng tiếng Việt
-- Responsive trên nhiều kích thước màn hình
-
-### Xác thực
-- Đăng ký và đăng nhập tài khoản
-- Bảo mật dữ liệu người dùng
+| Tính năng | Mô tả |
+|-----------|-------|
+| **Quản lý Giao dịch** | Thêm, sửa, xóa giao dịch thu nhập và chi tiêu với hóa đơn đính kèm |
+| **Quản lý Danh mục** | Tạo danh mục tùy chỉnh với icon riêng |
+| **Quản lý Ngân sách** | Thiết lập và theo dõi ngân sách hàng tháng |
+| **Mục tiêu Tiết kiệm** | Đặt và theo dõi mục tiêu tiết kiệm |
+| **Giao dịch Định kỳ** | Tự động tạo giao dịch lặp lại |
+| **Ví điện tử** | Quản lý nhiều ví/tài khoản khác nhau |
+| **Báo cáo & Thống kê** | Biểu đồ chi tiêu, phân tích theo danh mục |
+| **Phân tích AI** | Insights thông minh về thói quen chi tiêu |
+| **Xuất dữ liệu** | Xuất báo cáo CSV/PDF |
+| **Dark/Light Mode** | Hỗ trợ cả hai chế độ giao diện |
 
 ## Cấu trúc dự án
 
@@ -77,53 +38,43 @@
 lib/
 ├── core/
 │   ├── theme/
-│   │   └── app_theme.dart          # Định nghĩa theme ứng dụng
+│   │   └── app_theme.dart
 │   └── widgets/
-│       └── ios_card.dart           # Widget card theo phong cách iOS
+│       └── ios_card.dart
 ├── models/
-│   ├── transaction.dart            # Model giao dịch
-│   ├── category.dart               # Model danh mục
-│   ├── budget.dart                 # Model ngân sách
-│   ├── savings_goal.dart           # Model mục tiêu tiết kiệm
-│   ├── recurring_transaction.dart  # Model giao dịch định kỳ
-│   ├── wallet.dart                 # Model ví
-│   ├── user.dart                   # Model người dùng
-│   └── ai_insight.dart             # Model phân tích AI
+│   ├── transaction.dart
+│   ├── category.dart
+│   ├── budget.dart
+│   ├── savings_goal.dart
+│   ├── recurring_transaction.dart
+│   ├── wallet.dart
+│   ├── user.dart
+│   └── ai_insight.dart
 ├── providers/
-│   ├── transaction_provider.dart   # State management giao dịch
-│   ├── category_provider.dart      # State management danh mục
-│   ├── budget_provider.dart        # State management ngân sách
-│   ├── savings_goal_provider.dart  # State management mục tiêu
-│   ├── recurring_provider.dart     # State management giao dịch định kỳ
-│   ├── wallet_provider.dart        # State management ví
-│   ├── ai_insight_provider.dart    # State management AI insights
-│   ├── theme_provider.dart         # State management theme
-│   └── expense_filter_provider.dart# State management bộ lọc
+│   ├── transaction_provider.dart
+│   ├── category_provider.dart
+│   ├── budget_provider.dart
+│   ├── savings_goal_provider.dart
+│   ├── recurring_provider.dart
+│   ├── wallet_provider.dart
+│   ├── ai_insight_provider.dart
+│   ├── theme_provider.dart
+│   └── expense_filter_provider.dart
 ├── screens/
 │   ├── auth/
-│   │   ├── login_screen.dart       # Màn hình đăng nhập
-│   │   └── register_screen.dart    # Màn hình đăng ký
 │   ├── settings/
-│   │   ├── category_settings_screen.dart    # Cài đặt danh mục
-│   │   ├── budget_settings_screen.dart      # Cài đặt ngân sách
-│   │   ├── savings_goals_screen.dart        # Mục tiêu tiết kiệm
-│   │   ├── recurring_settings_screen.dart   # Giao dịch định kỳ
-│   │   ├── wallet_settings_screen.dart      # Cài đặt ví
-│   │   ├── ai_insights_screen.dart          # Phân tích AI
-│   │   └── profile_edit_screen.dart         # Chỉnh sửa hồ sơ
-│   ├── dashboard_screen.dart       # Màn hình tổng quan
-│   ├── transactions_screen.dart    # Danh sách giao dịch
-│   ├── transaction_detail_screen.dart # Chi tiết giao dịch
-│   ├── reports_screen.dart         # Báo cáo & thống kê
-│   └── settings_screen.dart        # Màn hình cài đặt
+│   ├── dashboard_screen.dart
+│   ├── transactions_screen.dart
+│   ├── reports_screen.dart
+│   └── settings_screen.dart
 ├── services/
-│   ├── auth_service.dart           # Xử lý xác thực
-│   ├── ai_analysis_service.dart    # Phân tích AI
-│   ├── csv_service.dart            # Xuất file CSV
-│   ├── pdf_service.dart            # Xuất file PDF
-│   └── notification_service.dart   # Thông báo
-├── database_helper.dart            # Quản lý cơ sở dữ liệu SQLite
-└── main.dart                       # Entry point
+│   ├── auth_service.dart
+│   ├── ai_analysis_service.dart
+│   ├── csv_service.dart
+│   ├── pdf_service.dart
+│   └── notification_service.dart
+├── database_helper.dart
+└── main.dart
 ```
 
 ## Công nghệ sử dụng
@@ -133,16 +84,10 @@ lib/
 | **Flutter** | Framework xây dựng ứng dụng đa nền tảng |
 | **Dart** | Ngôn ngữ lập trình |
 | **Provider** | State management |
-| **SQLite** | Cơ sở dữ liệu local (mobile/desktop) |
-| **Hive** | Cơ sở dữ liệu local (web) |
+| **SQLite/Hive** | Cơ sở dữ liệu local |
 | **fl_chart** | Thư viện biểu đồ |
-| **intl** | Hỗ trợ đa ngôn ngữ và định dạng |
 | **pdf/printing** | Xuất file PDF |
-| **csv** | Xuất file CSV |
-| **image_picker** | Chọn ảnh hóa đơn |
 | **flutter_local_notifications** | Thông báo local |
-| **shared_preferences** | Lưu trữ cài đặt |
-| **flutter_secure_storage** | Lưu trữ bảo mật |
 
 ## Yêu cầu hệ thống
 
@@ -157,8 +102,8 @@ lib/
 ### 1. Clone repository
 
 ```bash
-git clone https://github.com/in4SECxMinDandy/Expense-Management
-cd Expense Management
+git clone https://github.com/in4SECxMinDandy/Expense-Management.git
+cd Expense-Management
 ```
 
 ### 2. Cài đặt dependencies
@@ -170,52 +115,42 @@ flutter pub get
 ### 3. Chạy ứng dụng
 
 ```bash
-# Chạy trên thiết bị/emulator mặc định
+# Chạy trên thiết bị mặc định
 flutter run
 
-# Chạy trên Android
+# Chạy trên nền tảng cụ thể
 flutter run -d android
-
-# Chạy trên iOS
 flutter run -d ios
-
-# Chạy trên Windows
 flutter run -d windows
-
-# Chạy trên Web
 flutter run -d chrome
 ```
 
 ### 4. Build ứng dụng
 
 ```bash
-# Build APK cho Android
+# Android APK
 flutter build apk --release
 
-# Build cho iOS
+# iOS
 flutter build ios --release
 
-# Build cho Windows
+# Windows
 flutter build windows --release
 
-# Build cho Web
+# Web
 flutter build web --release
 ```
 
 ## Nền tảng hỗ trợ
 
 | Nền tảng | Trạng thái |
-|----------|------------|
-| Android | Hỗ trợ |
-| iOS | Hỗ trợ |
-| Windows | Hỗ trợ |
-| macOS | Hỗ trợ |
-| Linux | Hỗ trợ |
-| Web | Hỗ trợ |
-
-## Screenshots
-
-*Thêm screenshots của ứng dụng tại đây*
+|----------|:----------:|
+| Android | ✅ |
+| iOS | ✅ |
+| Windows | ✅ |
+| macOS | ✅ |
+| Linux | ✅ |
+| Web | ✅ |
 
 ## Đóng góp
 
@@ -237,6 +172,6 @@ Nếu bạn có câu hỏi hoặc góp ý, vui lòng tạo issue trên GitHub.
 
 ---
 
-**Expense Management** - Quản lý chi tiêu thông minh, tiết kiệm hiệu quả!
-#   E x p e n s e - M a n a g e m e n t  
- 
+<p align="center">
+  <b>Expense Management</b> - Quản lý chi tiêu thông minh, tiết kiệm hiệu quả!
+</p>
