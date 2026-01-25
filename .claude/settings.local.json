@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c:*)",
+      "Bash(flutter analyze lib/screens/dashboard_screen.dart)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter pub get)",
+      "Bash(tree:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(ls \"C:\\\\Users\\\\haqua\\\\OneDrive\\\\Desktop\\\\DSA - C++\\\\SpendingManagement-main\\\\android\\\\settings\"*)",
+      "Bash(./gradlew wrapper:*)",
+      "Bash(gradlew.bat wrapper:*)",
+      "Bash(./gradlew clean:*)",
+      "Bash(flutter clean)"
+    ]
+  }
+}
