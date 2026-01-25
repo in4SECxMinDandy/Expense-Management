@@ -154,15 +154,10 @@ flutter build web --release
 
 ## Demo 
 
-![alt text](image.png)
-![alt text](image-1.png)
-![alt text](image-2.png)
-![alt text](image-3.png)
-![alt text](image-4.png)
-![alt text](image-5.png)
-![alt text](image-6.png)
-![alt text](image-7.png)
-![alt text](image-8.png)
+<img width="301" height="690" alt="image" src="https://github.com/user-attachments/assets/0a4166e8-f3d2-4b07-b9d8-43d8b1203a2c" /> <img width="302" height="690" alt="image" src="https://github.com/user-attachments/assets/a1172ec9-6f2d-477d-b03a-21c64e201810" /> <img width="302" height="690" alt="image" src="https://github.com/user-attachments/assets/6a583c8b-1242-48ab-9e6f-650c07091061" />
+
+
+
 
 ## Đóng góp
 
