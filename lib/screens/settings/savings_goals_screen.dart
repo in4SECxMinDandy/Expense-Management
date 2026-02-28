@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/ios_card.dart';
-import '../../../models/savings_goal.dart';
-import '../../../providers/savings_goal_provider.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ios_card.dart';
+import '../../models/savings_goal.dart';
+import '../../providers/savings_goal_provider.dart';
 
 class SavingsGoalsScreen extends StatefulWidget {
   const SavingsGoalsScreen({super.key});

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../database_helper.dart';
 import '../models/savings_goal.dart';
+import '../services/notification_service.dart';
 
 class SavingsGoalProvider extends ChangeNotifier {
   List<SavingsGoal> _goals = [];
@@ -72,6 +73,7 @@ class SavingsGoalProvider extends ChangeNotifier {
       if (result.isNotEmpty) {
         final goal = SavingsGoal.fromMap(result.first);
         final newAmount = goal.currentAmount + amount;
+        final wasCompleted = goal.isCompleted;
         final isCompleted = newAmount >= goal.targetAmount;
 
         await db.update(
@@ -83,6 +85,15 @@ class SavingsGoalProvider extends ChangeNotifier {
           where: 'id = ?',
           whereArgs: [goalId],
         );
+
+        // Gửi thông báo khi đạt mục tiêu lần đầu
+        if (isCompleted && !wasCompleted) {
+          await NotificationService.showSavingsGoalAchieved(
+            goalId: goalId,
+            goalName: goal.name,
+            targetAmount: goal.targetAmount,
+          );
+        }
 
         await loadGoals();
       }

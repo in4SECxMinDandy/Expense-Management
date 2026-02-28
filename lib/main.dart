@@ -14,6 +14,7 @@ import 'providers/theme_provider.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/transactions_screen.dart';
 
 import 'services/auth_service.dart';
 import 'screens/auth/login_screen.dart';
@@ -23,7 +24,21 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Khởi tạo notification service (an toàn trên mọi platform)
   await NotificationService.init();
+
+  // Yêu cầu quyền thông báo
+  await NotificationService.requestPermissions();
+
+  // Cấu hình orientation
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
+
   runApp(const SpendWiseApp());
 }
 
@@ -50,10 +65,14 @@ class SpendWiseApp extends StatelessWidget {
           SystemChrome.setSystemUIOverlayStyle(
             SystemUiOverlayStyle(
               statusBarColor: Colors.transparent,
-              statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-              statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-              systemNavigationBarColor: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
-              systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+              statusBarIconBrightness:
+                  isDark ? Brightness.light : Brightness.dark,
+              statusBarBrightness:
+                  isDark ? Brightness.dark : Brightness.light,
+              systemNavigationBarColor:
+                  isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
+              systemNavigationBarIconBrightness:
+                  isDark ? Brightness.light : Brightness.dark,
             ),
           );
 
@@ -88,6 +107,7 @@ class SpendWiseApp extends StatelessWidget {
   }
 }
 
+/// AuthWrapper - Kiểm tra trạng thái đăng nhập và điều hướng
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
@@ -103,11 +123,18 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkAuth() async {
-    final loggedIn = await AuthService.isLoggedIn();
-    if (mounted) {
-      if (loggedIn) {
-        Navigator.of(context).pushReplacementNamed('/main');
-      } else {
+    try {
+      final loggedIn = await AuthService.isLoggedIn();
+      if (mounted) {
+        if (loggedIn) {
+          Navigator.of(context).pushReplacementNamed('/main');
+        } else {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      }
+    } catch (e) {
+      // Nếu có lỗi, chuyển đến login
+      if (mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
       }
     }
@@ -115,10 +142,48 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      backgroundColor:
+          isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Logo/Icon
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: AppTheme.purpleGradient,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: AppTheme.purpleShadow,
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_rounded,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'SpendWise',
+              style: AppTheme.headingL.copyWith(
+                color: AppTheme.primaryPurple,
+              ),
+            ),
+            const SizedBox(height: 32),
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPurple),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
+/// MainScreen - Màn hình chính với bottom navigation
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -126,18 +191,73 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
-  // Use indexed stack or pageview for navigation
+  // Sử dụng IndexedStack để giữ state của các tab
   final List<Widget> _screens = const [
     DashboardScreen(),
+    TransactionsScreen(),
     ReportsScreen(),
     SettingsScreen(),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    // Xử lý recurring transactions khi app khởi động
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Khi app trở lại foreground, xử lý recurring transactions
+    if (state == AppLifecycleState.resumed) {
+      _processRecurring();
+    }
+  }
+
+  Future<void> _initializeData() async {
+    if (!mounted) return;
+
+    // Load dữ liệu ban đầu
+    final transactionProvider = context.read<TransactionProvider>();
+    final categoryProvider = context.read<CategoryProvider>();
+    final recurringProvider = context.read<RecurringProvider>();
+
+    await Future.wait([
+      transactionProvider.loadTransactions(),
+      categoryProvider.loadCategories(),
+      recurringProvider.loadRecurring(),
+    ]);
+
+    // Xử lý recurring transactions
+    if (mounted) {
+      await recurringProvider.processRecurring();
+    }
+  }
+
+  Future<void> _processRecurring() async {
+    if (!mounted) return;
+    final recurringProvider = context.read<RecurringProvider>();
+    await recurringProvider.loadRecurring();
+    await recurringProvider.processRecurring();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
@@ -153,17 +273,33 @@ class _MainScreenState extends State<MainScreen> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) => setState(() => _currentIndex = index),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          selectedItemColor: AppTheme.getPrimary(isDark),
+          unselectedItemColor: isDark
+              ? AppTheme.textSecondaryDark
+              : AppTheme.textSecondaryLight,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_rounded),
+              activeIcon: Icon(Icons.dashboard_rounded),
               label: 'Tổng quan',
             ),
             BottomNavigationBarItem(
+              icon: Icon(Icons.receipt_long_rounded),
+              activeIcon: Icon(Icons.receipt_long_rounded),
+              label: 'Giao dịch',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart_rounded),
+              activeIcon: Icon(Icons.bar_chart_rounded),
               label: 'Báo cáo',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings_rounded),
+              activeIcon: Icon(Icons.settings_rounded),
               label: 'Cài đặt',
             ),
           ],

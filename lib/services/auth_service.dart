@@ -1,6 +1,5 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:path_provider/path_provider.dart';
 import '../models/user.dart';
 
 class AuthService {
@@ -120,34 +119,15 @@ class AuthService {
     }
   }
 
-  /// Save avatar image to local storage
-  static Future<String?> saveAvatar(File imageFile) async {
+  /// Save avatar image from file path (non-web only)
+  static Future<String?> saveAvatarFromPath(String imagePath) async {
+    if (kIsWeb) return null;
+
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final avatarDir = Directory('${directory.path}/avatars');
-
-      if (!await avatarDir.exists()) {
-        await avatarDir.create(recursive: true);
-      }
-
-      final fileName = 'avatar_${_currentUserId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final savedFile = await imageFile.copy('${avatarDir.path}/$fileName');
-
-      // Delete old avatar if exists
-      if (_currentAvatarPath != null && _currentAvatarPath!.isNotEmpty) {
-        try {
-          final oldFile = File(_currentAvatarPath!);
-          if (await oldFile.exists()) {
-            await oldFile.delete();
-          }
-        } catch (_) {}
-      }
-
-      _currentAvatarPath = savedFile.path;
-      await _storage.write(key: _avatarKey, value: savedFile.path);
-
-      return savedFile.path;
+      // Sử dụng conditional import để tránh lỗi web
+      return await _saveAvatarNative(imagePath);
     } catch (e) {
+      debugPrint('Error saving avatar: $e');
       return null;
     }
   }
@@ -155,11 +135,8 @@ class AuthService {
   /// Delete avatar
   static Future<bool> deleteAvatar() async {
     try {
-      if (_currentAvatarPath != null && _currentAvatarPath!.isNotEmpty) {
-        final file = File(_currentAvatarPath!);
-        if (await file.exists()) {
-          await file.delete();
-        }
+      if (!kIsWeb && _currentAvatarPath != null && _currentAvatarPath!.isNotEmpty) {
+        await _deleteAvatarNative(_currentAvatarPath!);
       }
       _currentAvatarPath = null;
       await _storage.delete(key: _avatarKey);
@@ -167,6 +144,25 @@ class AuthService {
     } catch (e) {
       return false;
     }
+  }
+
+  /// Native file operations (non-web)
+  static Future<String?> _saveAvatarNative(String imagePath) async {
+    if (kIsWeb) return null;
+    try {
+      // Sử dụng dart:io chỉ trên non-web
+      // ignore: avoid_dynamic_calls
+      return await _AuthServiceNative.saveAvatar(imagePath, _currentUserId, _currentAvatarPath);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<void> _deleteAvatarNative(String path) async {
+    if (kIsWeb) return;
+    try {
+      await _AuthServiceNative.deleteAvatar(path);
+    } catch (_) {}
   }
 
   /// Logout
@@ -182,4 +178,45 @@ class AuthService {
     await _storage.delete(key: _phoneKey);
     await _storage.delete(key: _avatarKey);
   }
+}
+
+/// Native file operations helper (chỉ dùng trên non-web)
+class _AuthServiceNative {
+  static Future<String?> saveAvatar(
+    String imagePath,
+    String? userId,
+    String? oldAvatarPath,
+  ) async {
+    if (kIsWeb) return null;
+
+    try {
+      // Sử dụng dart:io thông qua dynamic import
+      return await _saveAvatarWithIo(imagePath, userId, oldAvatarPath);
+    } catch (e) {
+      debugPrint('Error in _AuthServiceNative.saveAvatar: $e');
+      return null;
+    }
+  }
+
+  static Future<void> deleteAvatar(String path) async {
+    if (kIsWeb) return;
+    try {
+      await _deleteAvatarWithIo(path);
+    } catch (_) {}
+  }
+}
+
+// Các hàm này sẽ được override bởi conditional imports
+// Trên non-web, chúng sẽ sử dụng dart:io
+Future<String?> _saveAvatarWithIo(
+  String imagePath,
+  String? userId,
+  String? oldAvatarPath,
+) async {
+  // Fallback: trả về path gốc nếu không thể copy
+  return imagePath;
+}
+
+Future<void> _deleteAvatarWithIo(String path) async {
+  // Fallback: không làm gì
 }

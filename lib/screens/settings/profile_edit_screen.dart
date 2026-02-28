@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,7 +21,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  File? _selectedImage;
+  XFile? _selectedImage; // Dùng XFile thay vì File để hỗ trợ web
   String? _currentAvatarPath;
   bool _isLoading = false;
   bool _hasChanges = false;
@@ -76,8 +77,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       );
 
       if (pickedFile != null) {
-        final file = File(pickedFile.path);
-        final fileSize = await file.length();
+        // Kiểm tra kích thước file
+        final fileSize = await pickedFile.length();
 
         if (fileSize > _maxFileSize) {
           if (mounted) {
@@ -87,7 +88,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         }
 
         setState(() {
-          _selectedImage = file;
+          _selectedImage = pickedFile; // Lưu XFile thay vì File
           _hasChanges = true;
         });
       }
@@ -150,10 +151,18 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     try {
       // Save avatar if new image selected
       String? newAvatarPath;
-      if (_selectedImage != null) {
-        newAvatarPath = await AuthService.saveAvatar(_selectedImage!);
-        if (newAvatarPath == null) {
-          _showError('Không thể lưu ảnh đại diện');
+      if (_selectedImage != null && !kIsWeb) {
+        // Chỉ lưu file trên non-web platforms
+        try {
+          // Sử dụng path từ XFile
+          newAvatarPath = await AuthService.saveAvatarFromPath(_selectedImage!.path);
+          if (newAvatarPath == null) {
+            _showError('Không thể lưu ảnh đại diện');
+            setState(() => _isLoading = false);
+            return;
+          }
+        } catch (e) {
+          _showError('Lỗi lưu ảnh: $e');
           setState(() => _isLoading = false);
           return;
         }
@@ -341,15 +350,31 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   Widget _buildAvatarSection(bool isDark) {
-    ImageProvider? avatarImage;
+    // Hiển thị avatar an toàn trên mọi platform
+    Widget avatarWidget;
 
     if (_selectedImage != null) {
-      avatarImage = FileImage(_selectedImage!);
-    } else if (_currentAvatarPath != null && _currentAvatarPath!.isNotEmpty) {
-      final file = File(_currentAvatarPath!);
-      if (file.existsSync()) {
-        avatarImage = FileImage(file);
-      }
+      // Hiển thị ảnh đã chọn
+      avatarWidget = FutureBuilder<Uint8List>(
+        future: _selectedImage!.readAsBytes(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Image.memory(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              width: 120,
+              height: 120,
+            );
+          }
+          return const CircularProgressIndicator();
+        },
+      );
+    } else {
+      avatarWidget = Icon(
+        Icons.person,
+        size: 60,
+        color: Colors.grey[400],
+      );
     }
 
     return GestureDetector(
@@ -377,18 +402,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   ],
                 ),
                 child: ClipOval(
-                  child: avatarImage != null
-                      ? Image(
-                          image: avatarImage,
-                          fit: BoxFit.cover,
-                          width: 120,
-                          height: 120,
-                        )
-                      : Icon(
-                          Icons.person,
-                          size: 60,
-                          color: Colors.grey[400],
-                        ),
+                  child: SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: avatarWidget,
+                  ),
                 ),
               ),
               Positioned(

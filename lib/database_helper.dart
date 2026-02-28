@@ -1,8 +1,11 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// DatabaseHelper - Singleton quản lý SQLite database
+/// Hỗ trợ: Android, iOS, Windows, macOS, Linux
+/// Web: Sử dụng sqflite_common_ffi_web (nếu cần)
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
@@ -17,25 +20,48 @@ class DatabaseHelper {
 
   Future<Database> _initDB(String filePath) async {
     // Initialize FFI for Windows/Linux/macOS
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
+    if (!kIsWeb) {
+      try {
+        // Chỉ khởi tạo FFI trên desktop platforms
+        if (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux ||
+            defaultTargetPlatform == TargetPlatform.macOS) {
+          sqfliteFfiInit();
+          databaseFactory = databaseFactoryFfi;
+        }
+      } catch (e) {
+        debugPrint('FFI init error (non-critical): $e');
+      }
     }
 
-    final dbPath = await getApplicationDocumentsDirectory();
-    final path = join(dbPath.path, filePath);
+    String path;
+    if (kIsWeb) {
+      // Web: sử dụng in-memory hoặc IndexedDB
+      path = filePath;
+    } else {
+      final dbPath = await getApplicationDocumentsDirectory();
+      path = join(dbPath.path, filePath);
+    }
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
+      onOpen: (db) async {
+        // Enable foreign keys mỗi khi mở database
+        if (!kIsWeb) {
+          await db.execute('PRAGMA foreign_keys = ON');
+        }
+      },
     );
   }
 
   Future _createDB(Database db, int version) async {
     // Enable foreign keys
-    await db.execute('PRAGMA foreign_keys = ON');
+    if (!kIsWeb) {
+      await db.execute('PRAGMA foreign_keys = ON');
+    }
 
     // Bảng Categories: Lưu danh mục thu/chi
     await db.execute('''
@@ -54,6 +80,7 @@ class DatabaseHelper {
       CREATE TABLE transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         category_id INTEGER NOT NULL,
+        wallet_id INTEGER,
         amount REAL NOT NULL,
         date TEXT NOT NULL,
         description TEXT,
@@ -61,6 +88,7 @@ class DatabaseHelper {
         notes TEXT,
         receipt_path TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
       )
     ''');
@@ -88,6 +116,8 @@ class DatabaseHelper {
         repeat_interval TEXT NOT NULL,
         next_run_date TEXT NOT NULL,
         is_active INTEGER DEFAULT 1,
+        last_run_date TEXT,
+        notification_enabled INTEGER DEFAULT 1,
         FOREIGN KEY (category_id) REFERENCES categories(id)
       )
     ''');
@@ -228,7 +258,7 @@ class DatabaseHelper {
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('''
-        CREATE TABLE recurring_transactions (
+        CREATE TABLE IF NOT EXISTS recurring_transactions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           amount REAL NOT NULL,
           category_id INTEGER NOT NULL,
@@ -242,12 +272,17 @@ class DatabaseHelper {
       ''');
     }
     if (oldVersion < 3) {
-      await db.execute('ALTER TABLE transactions ADD COLUMN notes TEXT');
-      await db.execute('ALTER TABLE transactions ADD COLUMN receipt_path TEXT');
+      // Thêm cột nếu chưa tồn tại (safe migration)
+      try {
+        await db.execute('ALTER TABLE transactions ADD COLUMN notes TEXT');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE transactions ADD COLUMN receipt_path TEXT');
+      } catch (_) {}
     }
     if (oldVersion < 4) {
       await db.execute('''
-        CREATE TABLE savings_goals (
+        CREATE TABLE IF NOT EXISTS savings_goals (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           target_amount REAL NOT NULL,
@@ -262,7 +297,7 @@ class DatabaseHelper {
     }
     if (oldVersion < 5) {
       await db.execute('''
-        CREATE TABLE wallets (
+        CREATE TABLE IF NOT EXISTS wallets (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           type TEXT NOT NULL,
@@ -275,14 +310,17 @@ class DatabaseHelper {
       ''');
 
       // Thêm ví mặc định cho người dùng hiện tại
-      await db.insert('wallets', {
-        'name': 'Tiền mặt',
-        'type': 'cash',
-        'balance': 0,
-        'icon': '💵',
-        'color': '#4CAF50',
-        'is_default': 1,
-      });
+      final existing = await db.query('wallets', limit: 1);
+      if (existing.isEmpty) {
+        await db.insert('wallets', {
+          'name': 'Tiền mặt',
+          'type': 'cash',
+          'balance': 0,
+          'icon': '💵',
+          'color': '#4CAF50',
+          'is_default': 1,
+        });
+      }
     }
     if (oldVersion < 6) {
       // Thêm các danh mục mới
@@ -338,5 +376,35 @@ class DatabaseHelper {
         }
       }
     }
+    if (oldVersion < 7) {
+      // Thêm cột wallet_id và updated_at cho transactions
+      try {
+        await db.execute('ALTER TABLE transactions ADD COLUMN wallet_id INTEGER');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE transactions ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
+      } catch (_) {}
+      // Thêm cột notification_enabled và last_run_date cho recurring_transactions
+      try {
+        await db.execute('ALTER TABLE recurring_transactions ADD COLUMN last_run_date TEXT');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE recurring_transactions ADD COLUMN notification_enabled INTEGER DEFAULT 1');
+      } catch (_) {}
+    }
+  }
+
+  /// Đóng database (dùng khi test hoặc reset)
+  Future<void> close() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+  }
+
+  /// Xóa và tạo lại database (dùng khi cần reset)
+  Future<void> resetDatabase() async {
+    await close();
+    _database = await _initDB('expense_manager.db');
   }
 }

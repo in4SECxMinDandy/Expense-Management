@@ -91,15 +91,15 @@ class AIInsight {
 
   factory AIInsight.fromMap(Map<String, dynamic> map) {
     return AIInsight(
-      id: map['id'],
-      title: map['title'],
-      message: map['message'],
-      type: InsightType.values[map['type'] ?? 0],
-      priority: InsightPriority.values[map['priority'] ?? 1],
-      actionText: map['action_text'],
-      actionRoute: map['action_route'],
-      createdAt: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
-      isRead: map['is_read'] == 1,
+      id: map['id'] as int?,
+      title: (map['title'] as String?) ?? '',
+      message: (map['message'] as String?) ?? '',
+      type: InsightType.values[(map['type'] as int?) ?? 0],
+      priority: InsightPriority.values[(map['priority'] as int?) ?? 1],
+      actionText: map['action_text'] as String?,
+      actionRoute: map['action_route'] as String?,
+      createdAt: DateTime.tryParse((map['created_at'] as String?) ?? '') ?? DateTime.now(),
+      isRead: (map['is_read'] as int?) == 1,
     );
   }
 
@@ -130,7 +130,7 @@ class AIInsight {
   }
 }
 
-/// Kết quả phân tích tổng hợp
+/// Kết quả phân tích tổng hợp - Cải tiến với nhiều metrics hơn
 class SpendingAnalysis {
   final double totalIncome;
   final double totalExpense;
@@ -138,9 +138,15 @@ class SpendingAnalysis {
   final double avgDailySpending;
   final Map<int, double> categorySpending;
   final Map<int, String> categoryNames;
+  final Map<int, String> categoryIcons;
+  final Map<int, int> categoryTransactionCount;
   final List<double> weeklyTrend;
   final double spendingChange; // % thay đổi so với kỳ trước
   final int daysAnalyzed;
+  final double predictedMonthlyExpense; // Dự đoán chi tiêu tháng tới
+  final Map<int, double> weekdaySpending; // Chi tiêu theo ngày trong tuần
+  final Map<String, double> monthlyTrend; // Xu hướng 6 tháng
+  final int transactionCount;
 
   SpendingAnalysis({
     required this.totalIncome,
@@ -149,10 +155,21 @@ class SpendingAnalysis {
     required this.avgDailySpending,
     required this.categorySpending,
     required this.categoryNames,
+    Map<int, String>? categoryIcons,
+    Map<int, int>? categoryTransactionCount,
     required this.weeklyTrend,
     required this.spendingChange,
     required this.daysAnalyzed,
-  });
+    double? predictedMonthlyExpense,
+    Map<int, double>? weekdaySpending,
+    Map<String, double>? monthlyTrend,
+    int? transactionCount,
+  })  : categoryIcons = categoryIcons ?? {},
+        categoryTransactionCount = categoryTransactionCount ?? {},
+        predictedMonthlyExpense = predictedMonthlyExpense ?? totalExpense,
+        weekdaySpending = weekdaySpending ?? {},
+        monthlyTrend = monthlyTrend ?? {},
+        transactionCount = transactionCount ?? 0;
 
   double get balance => totalIncome - totalExpense;
 
@@ -170,5 +187,20 @@ class SpendingAnalysis {
     return categorySpending.map(
       (key, value) => MapEntry(key, (value / totalExpense) * 100),
     );
+  }
+
+  /// Top N danh mục chi tiêu nhiều nhất
+  List<MapEntry<int, double>> getTopCategories(int n) {
+    final sorted = categorySpending.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.take(n).toList();
+  }
+
+  /// Ngày trong tuần chi tiêu nhiều nhất
+  int? get topSpendingWeekday {
+    if (weekdaySpending.isEmpty) return null;
+    return weekdaySpending.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
   }
 }

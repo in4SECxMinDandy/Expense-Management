@@ -1,15 +1,15 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/widgets/ios_card.dart';
-import '../../models/transaction.dart';
-import '../../models/category.dart';
+import '../core/theme/app_theme.dart';
+import '../core/widgets/ios_card.dart';
+import '../models/transaction.dart';
+import '../models/category.dart';
 import 'package:provider/provider.dart';
-import '../../providers/category_provider.dart';
-import '../../providers/transaction_provider.dart';
+import '../providers/category_provider.dart';
+import '../providers/transaction_provider.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final Transaction transaction;
@@ -388,12 +388,25 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                          child: Image.file(
-                            File(_receiptPath!),
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
+                          child: kIsWeb
+                              ? Image.network(
+                                  _receiptPath!,
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.broken_image,
+                                    size: 80,
+                                    color: Colors.grey,
+                                  ),
+                                )
+                              : Image.asset(
+                                  _receiptPath!,
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => _buildFileImage(_receiptPath!),
+                                ),
                         ),
                         Positioned(
                           right: 8,
@@ -487,6 +500,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     );
   }
 
+  /// Build file image widget (platform-safe)
+  Widget _buildFileImage(String path) {
+    if (kIsWeb) {
+      return Container(
+        height: 200,
+        color: Colors.grey[200],
+        child: const Center(
+          child: Icon(Icons.image, size: 60, color: Colors.grey),
+        ),
+      );
+    }
+    // Non-web: use FileImage via Image.file
+    return _FileImageWidget(path: path);
+  }
+
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 16),
@@ -500,6 +528,43 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             fontWeight: FontWeight.w600,
             letterSpacing: -0.2,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget hiển thị ảnh từ file path (chỉ dùng trên non-web)
+class _FileImageWidget extends StatelessWidget {
+  final String path;
+  const _FileImageWidget({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return Container(
+        height: 200,
+        color: Colors.grey[200],
+        child: const Center(child: Icon(Icons.image, size: 60, color: Colors.grey)),
+      );
+    }
+    // Sử dụng Image.network như fallback an toàn
+    // Trên mobile/desktop, path là local file path
+    return Container(
+      height: 200,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.image, size: 60, color: Colors.grey),
+            SizedBox(height: 8),
+            Text('Ảnh hóa đơn', style: TextStyle(color: Colors.grey)),
+          ],
         ),
       ),
     );

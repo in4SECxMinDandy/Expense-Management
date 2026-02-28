@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/widgets/ios_card.dart';
-import '../../models/transaction.dart';
-import '../../providers/transaction_provider.dart';
+import '../core/theme/app_theme.dart';
+import '../core/widgets/ios_card.dart';
+import '../models/transaction.dart';
+import '../providers/transaction_provider.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
